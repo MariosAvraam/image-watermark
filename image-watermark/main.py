@@ -34,6 +34,12 @@ class WatermarkApp:
         self.opacity_scale.pack(pady=5)
         self.opacity_scale.set(50)  # default value
 
+        self.position_var = tk.StringVar(root)
+        self.position_var.set("Bottom-Right")  # default value
+        self.position_options = ["Top-Left", "Top-Right", "Center", "Bottom-Left", "Bottom-Right"]
+        self.position_dropdown = tk.OptionMenu(root, self.position_var, *self.position_options)
+        self.position_dropdown.pack(pady=10)
+
         self.apply_button = ttk.Button(root, text="Apply Watermark", command=self.apply_watermark)
         self.apply_button.pack(pady=10)
 
@@ -96,11 +102,21 @@ class WatermarkApp:
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
         
-        # Position watermark at the bottom right corner
-        x = self.watermarked_image.width - text_width - 30
-        y = self.watermarked_image.height - text_height - 30
-        draw.text((x, y), text, font=font, fill=color)
+         # Determine the position based on user's choice
+        position = self.position_var.get()
+        if position == "Top-Left":
+            x, y = 30, 30
+        elif position == "Top-Right":
+            x, y = self.watermarked_image.width - text_width - 30, 30
+        elif position == "Center":
+            x = (self.watermarked_image.width - text_width) / 2
+            y = (self.watermarked_image.height - text_height) / 2
+        elif position == "Bottom-Left":
+            x, y = 30, self.watermarked_image.height - text_height - 30
+        else:  # Bottom-Right
+            x, y = self.watermarked_image.width - text_width - 30, self.watermarked_image.height - text_height - 30
 
+        draw.text((x, y), text, font=font, fill=color)
         self.display_image(self.watermarked_image)
 
 
