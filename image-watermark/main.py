@@ -28,6 +28,23 @@ class WatermarkApp:
 
         # Right side for watermark properties
         self.right_frame = Frame(self.paned_window)
+
+        # Add a button to upload image as watermark
+        self.upload_watermark_button = ttk.Button(self.right_frame, text="Upload Image as Watermark", command=self.upload_watermark_image)
+        self.upload_watermark_button.pack(pady=10)
+        
+        # Add a label to show the path of the uploaded watermark image
+        self.watermark_image_label = Label(self.right_frame, text="", wraplength=200)
+        self.watermark_image_label.pack(pady=10)
+
+        # Add a label to display the uploaded watermark image
+        self.watermark_display_label = Label(self.right_frame, bg='gray')
+        self.watermark_display_label.pack(pady=5)
+
+
+        self.remove_watermark_image_button = ttk.Button(self.right_frame, text="Remove Image Watermark", command=self.remove_watermark_image)
+        self.remove_watermark_image_button.pack(pady=10)
+
         
         self.watermark_entry = Entry(self.right_frame, width=30)
         self.watermark_entry.pack(pady=10)
@@ -73,6 +90,45 @@ class WatermarkApp:
         # Variables to hold image data
         self.image = None
         self.watermarked_image = None
+
+    
+    def upload_watermark_image(self):
+        file_path = filedialog.askopenfilename()
+        if not file_path:
+            return
+
+        self.watermark_image = Image.open(file_path)
+
+        # Ensure the watermark image has an alpha channel (transparency)
+        if self.watermark_image.mode != 'RGBA':
+            self.watermark_image = self.watermark_image.convert('RGBA')
+
+        # Display the uploaded watermark image in the label
+        max_width = 150
+        max_height = 150
+        # Check if the image needs to be resized
+        if self.watermark_image.width > max_width or self.watermark_image.height > max_height:
+            # Calculate the aspect ratio
+            aspect_ratio = self.watermark_image.width / self.watermark_image.height
+            if aspect_ratio > 1:
+                # Image is wider than it is tall
+                new_width = max_width
+                new_height = int(max_width / aspect_ratio)
+            else:
+                # Image is taller than it is wide
+                new_height = max_height
+                new_width = int(max_height * aspect_ratio)
+
+            # Resize the image
+            self.watermark_image = self.watermark_image.resize((new_width, new_height), Image.LANCZOS)
+
+        tk_watermark_image = ImageTk.PhotoImage(self.watermark_image)
+        self.watermark_display_label.config(image=tk_watermark_image)
+        self.watermark_display_label.image = tk_watermark_image
+
+        # Disable the watermark text entry when an image is used
+        self.watermark_entry.config(state=tk.DISABLED)
+
 
     
     def validate_input(self):
@@ -125,42 +181,81 @@ class WatermarkApp:
 
 
     def apply_watermark(self):
+        if not self.image:
+            return
+
+        # Check for necessary validations
         if not self.validate_input():
             return
 
         self.watermarked_image = self.image.copy()
-        draw = ImageDraw.Draw(self.watermarked_image)
 
-        # Set watermark properties
-        selected_font = self.font_var.get() + ".otf"
-        font_path = os.path.join('fonts', selected_font)
-        font = ImageFont.truetype(font_path, 30)
+        # If a watermark image is provided
+        if self.watermark_image:
+            # Resize the watermark image to be 1/5th the width of the original image, 
+            # and make sure to keep the alpha channel
+            base_width_ratio = 0.2
+            base_width = int(self.image.width * base_width_ratio)
+            aspect_ratio = self.watermark_image.width / self.watermark_image.height
+            new_width = base_width
+            new_height = int(base_width / aspect_ratio)
+            self.watermark_image = self.watermark_image.resize((new_width, new_height), Image.LANCZOS).convert('RGBA')
 
-        # Set watermark properties
-        text = self.watermark_entry.get()
-        color_name = self.color_combobox.get()
-        alpha = int(self.opacity_scale.get() * 2.55)  # converting percentage to [0, 255] scale
-        color = self.get_rgba(color_name, alpha)
-        bbox = font.getbbox(text)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
-        
-         # Determine the position based on user's choice
-        position = self.position_var.get()
-        if position == "Top-Left":
-            x, y = 30, 30
-        elif position == "Top-Right":
-            x, y = self.watermarked_image.width - text_width - 30, 30
-        elif position == "Center":
-            x = (self.watermarked_image.width - text_width) / 2
-            y = (self.watermarked_image.height - text_height) / 2
-        elif position == "Bottom-Left":
-            x, y = 30, self.watermarked_image.height - text_height - 30
-        else:  # Bottom-Right
-            x, y = self.watermarked_image.width - text_width - 30, self.watermarked_image.height - text_height - 30
+            # Calculate position based on user's choice
+            position = self.position_var.get()
+            if position == "Top-Left":
+                x, y = 30, 30
+            elif position == "Top-Right":
+                x, y = self.watermarked_image.width - self.watermark_image.width - 30, 30
+            elif position == "Center":
+                x = (self.watermarked_image.width - self.watermark_image.width) / 2
+                y = (self.watermarked_image.height - self.watermark_image.height) / 2
+            elif position == "Bottom-Left":
+                x, y = 30, self.watermarked_image.height - self.watermark_image.height - 30
+            else:  # Bottom-Right
+                x, y = self.watermarked_image.width - self.watermark_image.width - 30, self.watermarked_image.height - self.watermark_image.height - 30
+            
+            # Create a mask using the alpha channel of the watermark image
+            mask = self.watermark_image.split()[3]
 
-        draw.text((x, y), text, font=font, fill=color)
+            # Place the watermark image using the mask
+            position = (int(x), int(y))
+            self.watermarked_image.paste(self.watermark_image, position, mask)
+        else:
+            # Use the text watermark
+            draw = ImageDraw.Draw(self.watermarked_image)
+
+            # Set watermark properties
+            selected_font = self.font_var.get() + ".otf"
+            font_path = os.path.join('fonts', selected_font)
+            font = ImageFont.truetype(font_path, 30)
+
+            text = self.watermark_entry.get()
+            color_name = self.color_combobox.get()
+            alpha = int(self.opacity_scale.get() * 2.55)  # converting percentage to [0, 255] scale
+            color = self.get_rgba(color_name, alpha)
+            bbox = font.getbbox(text)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            # Determine the position based on user's choice
+            position = self.position_var.get()
+            if position == "Top-Left":
+                x, y = 30, 30
+            elif position == "Top-Right":
+                x, y = self.watermarked_image.width - text_width - 30, 30
+            elif position == "Center":
+                x = (self.watermarked_image.width - text_width) / 2
+                y = (self.watermarked_image.height - text_height) / 2
+            elif position == "Bottom-Left":
+                x, y = 30, self.watermarked_image.height - text_height - 30
+            else:  # Bottom-Right
+                x, y = self.watermarked_image.width - text_width - 30, self.watermarked_image.height - text_height - 30
+
+            draw.text((x, y), text, font=font, fill=color)
+
         self.display_image(self.watermarked_image)
+
 
 
     def save_image(self):
@@ -184,7 +279,16 @@ class WatermarkApp:
             "yellow": (255, 255, 0, alpha)
         }
         return color_dict.get(color_name, (255, 255, 255, alpha))
+    
 
+    def remove_watermark_image(self):
+        self.watermark_image = None
+        # Clear the displayed watermark image
+        self.watermark_display_label.config(image=None)
+        self.watermark_display_label.image = None  # This line is essential to free up the memory used by the PhotoImage
+        # Enable the watermark text entry
+        self.watermark_entry.config(state=tk.NORMAL)
+        tk.messagebox.showinfo("Info", "Watermark image removed. You can now use text.")
 
 
 root = Tk()
