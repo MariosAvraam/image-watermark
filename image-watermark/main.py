@@ -1,4 +1,4 @@
-from tkinter import ttk, Tk, Label, Entry, filedialog, PanedWindow, Frame
+from tkinter import ttk, Tk, Label, Entry, filedialog, PanedWindow, Frame, messagebox
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import tkinter as tk
 import os
@@ -74,6 +74,21 @@ class WatermarkApp:
         self.image = None
         self.watermarked_image = None
 
+    
+    def validate_input(self):
+        """
+        Validates user input before applying watermark.
+        """
+        if not self.image:
+            messagebox.showerror("Error", "Please upload an image first!")
+            return False
+        
+        if not self.watermark_entry.get().strip() and not self.watermarked_image:
+            messagebox.showerror("Error", "Please enter a watermark text or choose an image as a watermark!")
+            return False
+
+        return True
+
 
     def upload_image(self):
         file_path = filedialog.askopenfilename()
@@ -110,7 +125,7 @@ class WatermarkApp:
 
 
     def apply_watermark(self):
-        if not self.image:
+        if not self.validate_input():
             return
 
         self.watermarked_image = self.image.copy()
@@ -149,7 +164,7 @@ class WatermarkApp:
 
 
     def save_image(self):
-        if not self.watermarked_image:
+        if not self.validate_input():
             return
 
         file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg"), ("All files", "*.*")])
