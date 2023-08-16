@@ -1,5 +1,6 @@
 from tkinter import ttk, Tk, Label, Entry, filedialog
 from PIL import Image, ImageTk, ImageDraw, ImageFont
+import tkinter as tk
 
 class WatermarkApp:
     def __init__(self, root):
@@ -21,6 +22,12 @@ class WatermarkApp:
         self.watermark_entry.pack(pady=20)
         self.watermark_entry.insert(0, "Enter watermark text")
 
+        self.color_label = tk.Label(root, text="Select Watermark Color:")
+        self.color_label.pack(pady=(20,0))
+        self.color_combobox = ttk.Combobox(root, values=["white", "black", "red", "blue", "green", "yellow"], state="readonly")
+        self.color_combobox.pack(pady=(0,20))
+        self.color_combobox.set("white")  # default value
+
         self.apply_button = ttk.Button(root, text="Apply Watermark", command=self.apply_watermark)
         self.apply_button.pack(pady=20)
 
@@ -31,6 +38,7 @@ class WatermarkApp:
         self.image = None
         self.watermarked_image = None
 
+
     def upload_image(self):
         file_path = filedialog.askopenfilename()
         if not file_path:
@@ -38,6 +46,7 @@ class WatermarkApp:
 
         self.image = Image.open(file_path)
         self.display_image(self.image)
+
 
     def display_image(self, image):
         max_width = 400
@@ -62,6 +71,8 @@ class WatermarkApp:
         tk_image = ImageTk.PhotoImage(image)
         self.image_label.config(image=tk_image, text="")
         self.image_label.image = tk_image
+
+
     def apply_watermark(self):
         if not self.image:
             return
@@ -72,18 +83,18 @@ class WatermarkApp:
         # Set watermark properties
         font = ImageFont.truetype("arial.ttf", 30)
         text = self.watermark_entry.get()
+        color = self.color_combobox.get()
         bbox = font.getbbox(text)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
-
-
         
         # Position watermark at the bottom right corner
         x = self.watermarked_image.width - text_width - 30
         y = self.watermarked_image.height - text_height - 30
-        draw.text((x, y), text, font=font, fill="white")
+        draw.text((x, y), text, font=font, fill=color)
 
         self.display_image(self.watermarked_image)
+
 
     def save_image(self):
         if not self.watermarked_image:
@@ -94,6 +105,7 @@ class WatermarkApp:
             return
 
         self.watermarked_image.save(file_path)
+
 
 root = Tk()
 app = WatermarkApp(root)
