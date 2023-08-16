@@ -1,6 +1,7 @@
 from tkinter import ttk, Tk, Label, Entry, filedialog
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import tkinter as tk
+import os
 
 class WatermarkApp:
     def __init__(self, root):
@@ -27,6 +28,14 @@ class WatermarkApp:
         self.color_combobox = ttk.Combobox(root, values=["white", "black", "red", "blue", "green", "yellow"], state="readonly")
         self.color_combobox.pack(pady=5)
         self.color_combobox.set("white")  # default value
+
+        # Dropdown for font selection
+        self.font_var = tk.StringVar(root)
+        available_fonts = [f[:-4] for f in os.listdir('fonts') if f.endswith('.otf')]
+        if available_fonts:
+            self.font_var.set(available_fonts[0])  # set default value to the first font
+            self.font_dropdown = tk.OptionMenu(root, self.font_var, *available_fonts)
+            self.font_dropdown.pack(pady=20)
 
         self.opacity_label = tk.Label(root, text="Watermark Opacity:")
         self.opacity_label.pack(pady=5)
@@ -93,7 +102,11 @@ class WatermarkApp:
         draw = ImageDraw.Draw(self.watermarked_image)
 
         # Set watermark properties
-        font = ImageFont.truetype("arial.ttf", 30)
+        selected_font = self.font_var.get() + ".otf"
+        font_path = os.path.join('fonts', selected_font)
+        font = ImageFont.truetype(font_path, 30)
+
+        # Set watermark properties
         text = self.watermark_entry.get()
         color_name = self.color_combobox.get()
         alpha = int(self.opacity_scale.get() * 2.55)  # converting percentage to [0, 255] scale
