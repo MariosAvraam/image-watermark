@@ -1,27 +1,30 @@
-import tkinter as tk
-from tkinter import filedialog
+from tkinter import ttk, Tk, Label, Entry, filedialog
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 
 class WatermarkApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Watermark Application")
-
+        self.root.title("Modern Watermark Application")
+        
+        # Style
+        self.style = ttk.Style()
+        self.style.configure("TButton", padding=6, relief="flat", font=('Arial', 10))
+        
         # Create and place widgets
-        self.upload_button = tk.Button(root, text="Upload Image", command=self.upload_image)
+        self.upload_button = ttk.Button(root, text="Upload Image", command=self.upload_image)
         self.upload_button.pack(pady=20)
 
-        self.image_label = tk.Label(root, text="Image will be displayed here.")
+        self.image_label = Label(root, text="Image will be displayed here.")
         self.image_label.pack(pady=20)
 
-        self.watermark_entry = tk.Entry(root, width=30)
+        self.watermark_entry = Entry(root, width=30)
         self.watermark_entry.pack(pady=20)
         self.watermark_entry.insert(0, "Enter watermark text")
 
-        self.apply_button = tk.Button(root, text="Apply Watermark", command=self.apply_watermark)
+        self.apply_button = ttk.Button(root, text="Apply Watermark", command=self.apply_watermark)
         self.apply_button.pack(pady=20)
 
-        self.save_button = tk.Button(root, text="Save Image", command=self.save_image)
+        self.save_button = ttk.Button(root, text="Save Image", command=self.save_image)
         self.save_button.pack(pady=20)
 
         # Variables to hold image data
@@ -92,6 +95,6 @@ class WatermarkApp:
 
         self.watermarked_image.save(file_path)
 
-root = tk.Tk()
+root = Tk()
 app = WatermarkApp(root)
 root.mainloop()
