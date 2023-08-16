@@ -13,26 +13,32 @@ class WatermarkApp:
         
         # Create and place widgets
         self.upload_button = ttk.Button(root, text="Upload Image", command=self.upload_image)
-        self.upload_button.pack(pady=20)
+        self.upload_button.pack(pady=10)
 
         self.image_label = Label(root, text="Image will be displayed here.")
-        self.image_label.pack(pady=20)
+        self.image_label.pack(pady=10)
 
         self.watermark_entry = Entry(root, width=30)
-        self.watermark_entry.pack(pady=20)
+        self.watermark_entry.pack(pady=10)
         self.watermark_entry.insert(0, "Enter watermark text")
 
         self.color_label = tk.Label(root, text="Select Watermark Color:")
-        self.color_label.pack(pady=(20,0))
+        self.color_label.pack(pady=5)
         self.color_combobox = ttk.Combobox(root, values=["white", "black", "red", "blue", "green", "yellow"], state="readonly")
-        self.color_combobox.pack(pady=(0,20))
+        self.color_combobox.pack(pady=5)
         self.color_combobox.set("white")  # default value
 
+        self.opacity_label = tk.Label(root, text="Watermark Opacity:")
+        self.opacity_label.pack(pady=5)
+        self.opacity_scale = tk.Scale(root, from_=10, to=100, orient="horizontal", sliderlength=30, length=250)
+        self.opacity_scale.pack(pady=5)
+        self.opacity_scale.set(50)  # default value
+
         self.apply_button = ttk.Button(root, text="Apply Watermark", command=self.apply_watermark)
-        self.apply_button.pack(pady=20)
+        self.apply_button.pack(pady=10)
 
         self.save_button = ttk.Button(root, text="Save Image", command=self.save_image)
-        self.save_button.pack(pady=20)
+        self.save_button.pack(pady=10)
 
         # Variables to hold image data
         self.image = None
@@ -83,7 +89,9 @@ class WatermarkApp:
         # Set watermark properties
         font = ImageFont.truetype("arial.ttf", 30)
         text = self.watermark_entry.get()
-        color = self.color_combobox.get()
+        color_name = self.color_combobox.get()
+        alpha = int(self.opacity_scale.get() * 2.55)  # converting percentage to [0, 255] scale
+        color = self.get_rgba(color_name, alpha)
         bbox = font.getbbox(text)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
@@ -105,6 +113,19 @@ class WatermarkApp:
             return
 
         self.watermarked_image.save(file_path)
+
+    
+    def get_rgba(self, color_name, alpha=255):
+        color_dict = {
+            "white": (255, 255, 255, alpha),
+            "black": (0, 0, 0, alpha),
+            "red": (255, 0, 0, alpha),
+            "blue": (0, 0, 255, alpha),
+            "green": (0, 255, 0, alpha),
+            "yellow": (255, 255, 0, alpha)
+        }
+        return color_dict.get(color_name, (255, 255, 255, alpha))
+
 
 
 root = Tk()
