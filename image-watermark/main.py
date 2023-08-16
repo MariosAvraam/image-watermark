@@ -1,4 +1,4 @@
-from tkinter import ttk, Tk, Label, Entry, filedialog
+from tkinter import ttk, Tk, Label, Entry, filedialog, PanedWindow, Frame
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import tkinter as tk
 import os
@@ -7,53 +7,68 @@ class WatermarkApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Modern Watermark Application")
-        
+        self.root.state('zoomed')  # Open app in fullscreen mode
+
         # Style
         self.style = ttk.Style()
         self.style.configure("TButton", padding=6, relief="flat", font=('Arial', 10))
+
+        # Create a split view using PanedWindow
+        self.paned_window = PanedWindow(self.root, orient=tk.HORIZONTAL)
+        self.paned_window.pack(fill=tk.BOTH, expand=1)
+
+        # Left side for image upload and display
+        self.left_frame = Frame(self.paned_window, bg='gray')
+        self.upload_button = ttk.Button(self.left_frame, text="Upload Image", command=self.upload_image)
+        self.upload_button.pack(pady=20)
+        self.image_label = Label(self.left_frame, text="Image will be displayed here.", bg='gray')
+        self.image_label.pack(pady=20, padx=20)
+        self.paned_window.add(self.left_frame)
+
+
+        # Right side for watermark properties
+        self.right_frame = Frame(self.paned_window)
         
-        # Create and place widgets
-        self.upload_button = ttk.Button(root, text="Upload Image", command=self.upload_image)
-        self.upload_button.pack(pady=10)
-
-        self.image_label = Label(root, text="Image will be displayed here.")
-        self.image_label.pack(pady=10)
-
-        self.watermark_entry = Entry(root, width=30)
+        self.watermark_entry = Entry(self.right_frame, width=30)
         self.watermark_entry.pack(pady=10)
         self.watermark_entry.insert(0, "Enter watermark text")
 
-        self.color_label = tk.Label(root, text="Select Watermark Color:")
+        self.color_label = tk.Label(self.right_frame, text="Select Watermark Color:")
         self.color_label.pack(pady=5)
-        self.color_combobox = ttk.Combobox(root, values=["white", "black", "red", "blue", "green", "yellow"], state="readonly")
+        self.color_combobox = ttk.Combobox(self.right_frame, values=["white", "black", "red", "blue", "green", "yellow"], state="readonly")
         self.color_combobox.pack(pady=5)
         self.color_combobox.set("white")  # default value
 
         # Dropdown for font selection
-        self.font_var = tk.StringVar(root)
+        self.font_var = tk.StringVar(self.right_frame)
         available_fonts = [f[:-4] for f in os.listdir('fonts') if f.endswith('.otf')]
         if available_fonts:
             self.font_var.set(available_fonts[0])  # set default value to the first font
-            self.font_dropdown = tk.OptionMenu(root, self.font_var, *available_fonts)
-            self.font_dropdown.pack(pady=20)
+            self.font_dropdown = tk.OptionMenu(self.right_frame, self.font_var, *available_fonts)
+            self.font_dropdown.pack(pady=10)
 
-        self.opacity_label = tk.Label(root, text="Watermark Opacity:")
+        self.opacity_label = tk.Label(self.right_frame, text="Watermark Opacity:")
         self.opacity_label.pack(pady=5)
-        self.opacity_scale = tk.Scale(root, from_=10, to=100, orient="horizontal", sliderlength=30, length=250)
+        self.opacity_scale = tk.Scale(self.right_frame, from_=10, to=100, orient="horizontal", sliderlength=30, length=250)
         self.opacity_scale.pack(pady=5)
         self.opacity_scale.set(50)  # default value
 
-        self.position_var = tk.StringVar(root)
+        self.position_var = tk.StringVar(self.right_frame)
         self.position_var.set("Bottom-Right")  # default value
         self.position_options = ["Top-Left", "Top-Right", "Center", "Bottom-Left", "Bottom-Right"]
-        self.position_dropdown = tk.OptionMenu(root, self.position_var, *self.position_options)
+        self.position_dropdown = tk.OptionMenu(self.right_frame, self.position_var, *self.position_options)
         self.position_dropdown.pack(pady=10)
 
-        self.apply_button = ttk.Button(root, text="Apply Watermark", command=self.apply_watermark)
+        self.apply_button = ttk.Button(self.right_frame, text="Apply Watermark", command=self.apply_watermark)
         self.apply_button.pack(pady=10)
 
-        self.save_button = ttk.Button(root, text="Save Image", command=self.save_image)
+        self.save_button = ttk.Button(self.right_frame, text="Save Image", command=self.save_image)
         self.save_button.pack(pady=10)
+
+        self.paned_window.add(self.right_frame)
+        self.root.update()  # Force the window to update its dimensions
+        self.paned_window.sash_place(0, self.root.winfo_width() // 2, 0)
+
 
         # Variables to hold image data
         self.image = None
@@ -70,8 +85,8 @@ class WatermarkApp:
 
 
     def display_image(self, image):
-        max_width = 400
-        max_height = 400
+        max_width = 600
+        max_height = 600
 
         # Check if the image needs to be resized
         if image.width > max_width or image.height > max_height:
