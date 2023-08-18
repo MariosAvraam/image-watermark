@@ -4,10 +4,13 @@ from tkinter import ttk, Tk, Label, Entry, PanedWindow, Frame, messagebox, filed
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 
 # Constants
-MAX_IMAGE_WIDTH = 600
-MAX_IMAGE_HEIGHT = 600
-MAX_WATERMARK_WIDTH = 150
-MAX_WATERMARK_HEIGHT = 150
+MAX_IMAGE_DIMENSIONS = (600, 600)
+MAX_WATERMARK_DIMENSIONS = (150, 150)
+OFFSET = 30
+FONT_DIR = 'fonts'
+FONT_EXTENSION = '.otf'
+AVAILABLE_COLORS = ["white", "black", "red", "blue", "green", "yellow"]
+POSITIONS = ["Top-Left", "Top-Right", "Center", "Bottom-Left", "Bottom-Right"]
 
 
 class WatermarkApp:
@@ -20,27 +23,31 @@ class WatermarkApp:
         Initialize the application with the main window (root).
         """
         self.root = root
+        self._setup_ui()
+        self._initialize_variables()
+
+    def _setup_ui(self):
+        """Configure UI components."""
         self._setup_main_window()
         self._setup_left_frame()
         self._setup_right_frame()
-        self._initialize_variables()
 
     def _setup_main_window(self):
         """Configure the main application window."""
         self.root.title("Modern Watermark Application")
         self.root.state('zoomed')
-
         self.style = ttk.Style()
         self.style.configure("TButton", padding=6, relief="flat", font=('Arial', 10))
-
         self.paned_window = PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.paned_window.pack(fill=tk.BOTH, expand=1)
 
     def _setup_left_frame(self):
         """Set up the left frame for image upload and display."""
         self.left_frame = Frame(self.paned_window, bg='gray')
+
         self.upload_button = ttk.Button(self.left_frame, text="Upload Image", command=self.upload_image)
         self.upload_button.pack(pady=20)
+
         self.image_label = Label(self.left_frame, text="Image will be displayed here.", bg='gray')
         self.image_label.pack(pady=20, padx=20)
         self.paned_window.add(self.left_frame)
@@ -106,24 +113,23 @@ class WatermarkApp:
         self.watermarked_image = None
 
     def upload_image(self):
-        """Load an image and display it in the app."""
+        """Load an image from file and display it in the app."""
         file_path = filedialog.askopenfilename()
         if not file_path:
             return
-
         self.image = Image.open(file_path)
         self.display_image(self.image)
 
     def display_image(self, image):
         """Display a given image in the left frame."""
-        if image.width > MAX_IMAGE_WIDTH or image.height > MAX_IMAGE_HEIGHT:
+        if image.width > MAX_IMAGE_DIMENSIONS[0] or image.height > MAX_IMAGE_DIMENSIONS[1]:
             aspect_ratio = image.width / image.height
             if aspect_ratio > 1:
-                new_width = MAX_IMAGE_WIDTH
-                new_height = int(MAX_IMAGE_WIDTH / aspect_ratio)
+                new_width = MAX_IMAGE_DIMENSIONS[0]
+                new_height = int(MAX_IMAGE_DIMENSIONS[1] / aspect_ratio)
             else:
-                new_height = MAX_IMAGE_HEIGHT
-                new_width = int(MAX_IMAGE_HEIGHT * aspect_ratio)
+                new_height = MAX_IMAGE_DIMENSIONS[1]
+                new_width = int(MAX_IMAGE_DIMENSIONS[1] * aspect_ratio)
             image = image.resize((new_width, new_height), Image.LANCZOS)
 
         tk_image = ImageTk.PhotoImage(image)
@@ -134,12 +140,11 @@ class WatermarkApp:
         """Apply the selected watermark to the image."""
         if not self.image:
             return
-
         if not self._validate_input():
             return
-
         self.watermarked_image = self.image.copy()
-
+        
+        # Apply image watermark if it exists
         if hasattr(self, 'watermark_image'):
             base_width_ratio = 0.2
             base_width = int(self.image.width * base_width_ratio)
@@ -155,21 +160,22 @@ class WatermarkApp:
                 y = (self.watermarked_image.height - self.watermark_image.height) / 2
             else:
                 position_dict = {
-                    "Top-Left": (30, 30),
-                    "Top-Right": (self.watermarked_image.width - self.watermark_image.width - 30, 30),
-                    "Bottom-Left": (30, self.watermarked_image.height - self.watermark_image.height - 30),
-                    "Bottom-Right": (self.watermarked_image.width - self.watermark_image.width - 30,
-                                    self.watermarked_image.height - self.watermark_image.height - 30)
+                    "Top-Left": (OFFSET, OFFSET),
+                    "Top-Right": (self.watermarked_image.width - self.watermark_image.width - OFFSET, OFFSET),
+                    "Bottom-Left": (OFFSET, self.watermarked_image.height - self.watermark_image.height - OFFSET),
+                    "Bottom-Right": (self.watermarked_image.width - self.watermark_image.width - OFFSET,
+                                    self.watermarked_image.height - self.watermark_image.height - OFFSET)
                 }
                 x, y = position_dict.get(position, (0, 0))
 
             mask = self.watermark_image.split()[3]
             self.watermarked_image.paste(self.watermark_image, (int(x), int(y)), mask)
 
+        # Apply text watermark if no image watermark exists
         else:
             draw = ImageDraw.Draw(self.watermarked_image)
-            selected_font = self.font_var.get() + ".otf"
-            font_path = os.path.join('fonts', selected_font)
+            selected_font = self.font_var.get() + FONT_EXTENSION
+            font_path = os.path.join(FONT_DIR, selected_font)
             font = ImageFont.truetype(font_path, 30)
             text = self.watermark_entry.get()
             color_name = self.color_combobox.get()
@@ -181,17 +187,17 @@ class WatermarkApp:
 
             position = self.position_var.get()
             position_dict = {
-                "Top-Left": (30, 30),
-                "Top-Right": (self.watermarked_image.width - text_width - 30, 30),
+                "Top-Left": (OFFSET, OFFSET),
+                "Top-Right": (self.watermarked_image.width - text_width - OFFSET, OFFSET),
                 "Center": ((self.watermarked_image.width - text_width) / 2,
-                           (self.watermarked_image.height - text_height) / 2),
-                "Bottom-Left": (30, self.watermarked_image.height - text_height - 30),
-                "Bottom-Right": (self.watermarked_image.width - text_width - 30,
-                                 self.watermarked_image.height - text_height - 30)
+                        (self.watermarked_image.height - text_height) / 2),
+                "Bottom-Left": (OFFSET, self.watermarked_image.height - text_height - OFFSET),
+                "Bottom-Right": (self.watermarked_image.width - text_width - OFFSET,
+                                self.watermarked_image.height - text_height - OFFSET)
             }
             position_coords = position_dict.get(position, (0, 0))
             draw.text(position_coords, text, font=font, fill=color)
-
+        
         self.display_image(self.watermarked_image)
 
     def save_image(self):
@@ -219,15 +225,13 @@ class WatermarkApp:
         return color_dict.get(color_name, (255, 255, 255, alpha))
 
     def _validate_input(self):
-        """Check if the user has provided valid inputs for watermarking."""
+        """Check if valid inputs for watermarking are provided by the user."""
         if not self.image:
             messagebox.showerror("Error", "Please upload an image first!")
             return False
-
         if not self.watermark_entry.get().strip() and not hasattr(self, 'watermark_image'):
             messagebox.showerror("Error", "Please enter a watermark text or choose an image as a watermark!")
             return False
-
         return True
 
     def upload_watermark_image(self):
@@ -240,14 +244,14 @@ class WatermarkApp:
         if self.watermark_image.mode != 'RGBA':
             self.watermark_image = self.watermark_image.convert('RGBA')
 
-        if self.watermark_image.width > MAX_WATERMARK_WIDTH or self.watermark_image.height > MAX_WATERMARK_HEIGHT:
+        if self.watermark_image.width > MAX_WATERMARK_DIMENSIONS[0] or self.watermark_image.height > MAX_WATERMARK_DIMENSIONS[1]:
             aspect_ratio = self.watermark_image.width / self.watermark_image.height
             if aspect_ratio > 1:
-                new_width = MAX_WATERMARK_WIDTH
-                new_height = int(MAX_WATERMARK_WIDTH / aspect_ratio)
+                new_width = MAX_WATERMARK_DIMENSIONS[0]
+                new_height = int(MAX_WATERMARK_DIMENSIONS[1] / aspect_ratio)
             else:
-                new_height = MAX_WATERMARK_HEIGHT
-                new_width = int(MAX_WATERMARK_HEIGHT * aspect_ratio)
+                new_height = MAX_WATERMARK_DIMENSIONS[1]
+                new_width = int(MAX_WATERMARK_DIMENSIONS[1] * aspect_ratio)
             self.watermark_image = self.watermark_image.resize((new_width, new_height), Image.LANCZOS)
 
         tk_watermark_image = ImageTk.PhotoImage(self.watermark_image)
