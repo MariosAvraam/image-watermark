@@ -7,17 +7,20 @@ The Modern Image Watermark Application is a user-friendly desktop tool that effo
 1. **Clone the repository:**
 ```bash
 git clone https://github.com/MariosAvraam/image-watermark.git
+```
 
 
 2. **Navigate to the project directory and install the required packages:**
 ```bash
 cd image-watermark
 pip install -r requirements.txt
+```
 
 
 3. **Run the application:**
 ```bash
 python main.py
+```
 
 
 ## Features
