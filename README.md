@@ -2,6 +2,8 @@
 
 The Modern Image Watermark Application is a user-friendly desktop tool that effortlessly adds customizable text or image watermarks to your photos.
 
+![Screenshot of app](screenshot_image.png)
+
 ## Installation
 
 1. **Clone the repository:**
